@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Emily A.I</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --chat-bg: #ffffff;
+      --btn: #e0e0e0;
+      --text: #111;
+      --code-bg: #0f172a;
+      --accent: #2563eb;
+    }
+    body.dark { --bg:#0f1115;--chat-bg:#1c1f26;--btn:#2a2e38;--text:#fff;--code-bg:#020617;--accent:#3b82f6; }
+    body.purple { --bg:#2b153f;--chat-bg:#3c1f5c;--btn:#6a3fa0;--text:#fff;--code-bg:#1e0f2e;--accent:#7c3aed; }
+    * { box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+    body { margin:0; background:var(--bg); color:var(--text); display:flex; height:100vh; }
+    .app { display:flex; width:100%; box-shadow:0 0 20px rgba(0,0,0,0.1); border-radius:12px; overflow:hidden; }
+    .sidebar { width:280px; padding:16px; background:var(--chat-bg); border-right:1px solid rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:12px; }
+    .history { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+    .history button { width:100%; padding:10px; border-radius:14px; border:none; background:#e0f2fe; color:#0369a1; cursor:pointer; text-align:left; font-weight:500; display:flex; justify-content:space-between; align-items:center; transition:background 0.2s; }
+    .history button:hover{background:#bae6fd;}
+    .history button span.delete{background:#ef4444;color:white;padding:2px 6px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .new-chat{background:#bae6fd;color:#075985;font-weight:600;padding:12px;border-radius:14px;cursor:pointer;border:none;transition:background 0.2s;}
+    .new-chat:hover{background:#93c5fd;}
+    .sidebar h2{margin-top:0;font-size:22px;font-weight:700;}
+    .sidebar label{display:block;margin-top:12px;font-size:14px;}
+    .sidebar select{width:100%;padding:8px;margin-top:6px;border-radius:8px;border:none;}
+    .sidebar .toggle-container{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+    .chat{flex:1;display:flex;flex-direction:column;background:var(--chat-bg);border-radius:0 12px 12px 0;overflow:hidden;box-shadow:inset 0 0 12px rgba(0,0,0,0.05);}
+    .header{padding:16px;font-size:20px;font-weight:bold;border-bottom:1px solid rgba(0,0,0,0.1);background:var(--chat-bg);}
+    .messages{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+    .msg{padding:14px;border-radius:18px;max-width:80%;white-space:pre-wrap;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+    .user{background:var(--btn);margin-left:auto;}
+    .ai{background:var(--chat-bg);border:1px solid rgba(0,0,0,0.1);}
+    pre{background:var(--code-bg);color:#e5e7eb;padding:12px;border-radius:12px;overflow-x:auto;position:relative;margin-top:8px;}
+    .copy-btn{position:absolute;top:8px;right:8px;background:var(--accent);color:white;border:none;padding:4px 8px;border-radius:6px;font-size:12px;cursor:pointer;}
+    .input-bar{display:flex;padding:12px;gap:8px;background:var(--chat-bg);border-top:1px solid rgba(0,0,0,0.1);}
+    .input-bar input{flex:1;padding:12px;border-radius:14px;border:1px solid #d1d5db;outline:none;font-size:14px;}
+    .input-bar button{padding:12px 16px;border-radius:14px;border:none;background:var(--accent);color:white;cursor:pointer;font-weight:600;transition:background 0.2s;}
+    .input-bar button:hover{background:#1d4ed8;}
+  </style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar">
+<h2>Emily A.I</h2>
+<button class="new-chat" onclick="newChat()">+ New Chat</button>
+<div class="history" id="history"></div>
+<label>Theme</label>
+<select id="theme">
+<option value="light">Light</option>
+<option value="dark">Dark</option>
+<option value="purple">Purple</option>
+</select>
+<div class="toggle-container">
+<label for="talkbackToggle">A.I Talkback</label>
+<input type="checkbox" id="talkbackToggle" checked />
+</div>
+</div>
+<div class="chat">
+<div class="header">Emily A.I</div>
+<div class="messages" id="messages"></div>
+<div class="input-bar">
+<div id="emojiPickerContainer" style="position:relative;">
+<button id="emojiBtn">😀</button>
+<div id="emojiPicker" style="display:none;position:absolute;bottom:45px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;padding:8px;max-width:320px;max-height:300px;overflow:auto;box-shadow:0 4px 10px rgba(0,0,0,0.2);z-index:100;">
+</div>
+</div>
+<input id="input" placeholder="Talk to Emily A.I…" />
+<button id="sendBtn">Send</button>
+</div>
+</div>
+</div>
+<script>
+let chatCount=0;
+const apiKey='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';
+const messages=document.getElementById('messages');
+const input=document.getElementById('input');
+const sendBtn=document.getElementById('sendBtn');
+const theme=document.getElementById('theme');
+const historyEl=document.getElementById('history');
+const talkbackToggle=document.getElementById('talkbackToggle');
+const emojiBtn=document.getElementById('emojiBtn');
+const emojiPicker=document.getElementById('emojiPicker');
+
+// Full emoji set (Unicode range for basic emojis and symbols, can be extended)
+const emojiList=[];
+for(let i=0x1F600;i<=0x1F64F;i++){ emojiList.push(String.fromCodePoint(i)); }
+for(let i=0x1F300;i<=0x1F5FF;i++){ emojiList.push(String.fromCodePoint(i)); }
+for(let i=0x1F680;i<=0x1F6FF;i++){ emojiList.push(String.fromCodePoint(i)); }
+emojiList.forEach(e=>{const btn=document.createElement('button');btn.textContent=e;btn.style.border='none';btn.style.background='none';btn.style.fontSize='20px';btn.style.cursor='pointer';btn.style.margin='2px';btn.onclick=()=>{input.value+=e;input.focus();emojiPicker.style.display='none';};emojiPicker.appendChild(btn);});
+emojiBtn.addEventListener('click',()=>{emojiPicker.style.display=emojiPicker.style.display==='none'?'block':'none';});
+
+theme.onchange=()=>{document.body.className=theme.value==='light'?'':theme.value;};
+function addMsg(text,cls){const div=document.createElement('div');div.className='msg '+cls;div.textContent=text;messages.appendChild(div);messages.scrollTop=messages.scrollHeight;if(cls==='ai'&&'speechSynthesis' in window&&talkbackToggle.checked){const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-GB';const voices=speechSynthesis.getVoices();const femaleVoice=voices.find(v=>v.lang.includes('en-GB')&&v.name.toLowerCase().includes('female'));if(femaleVoice)utterance.voice=femaleVoice;speechSynthesis.speak(utterance);}}
+function newChat(){messages.innerHTML='';addMsg('Hi, I am Emily A.I. How can I assist you?','ai');}
+function saveToHistory(text){const btn=document.createElement('button');btn.innerHTML=`<span>${`Chat ${++chatCount}: ${text.slice(0,20)}...`}</span> <span class='delete' onclick='deleteChat(this)'>X</span>`;btn.querySelector('span:first-child').onclick=()=>{messages.innerHTML='';addMsg(text,'user');};historyEl.prepend(btn);}
+function deleteChat(el){el.parentElement.remove();}
+async function callOpenAI(text){if(!apiKey||apiKey==='YOUR_VALID_API_KEY_HERE'){addMsg('Error: Invalid API key. Please set a valid key in the script.','ai');return;}addMsg(text,'user');input.value='';addMsg('Thinking...','ai');try{const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:text}]})});if(!res.ok)throw new Error('API request failed');messages.lastChild.remove();const data=await res.json();addMsg(data.choices[0].message.content,'ai');}catch(err){messages.lastChild.remove();addMsg('Error: Emily A.I could not complete the request.','ai');console.error(err);}}
+function send(){if(!input.value)return;const text=input.value;saveToHistory(text);callOpenAI(text);}
+sendBtn.onclick=send;
+input.addEventListener('keypress',e=>{if(e.key==='Enter')send();});
+newChat();
+</script>
+</body>
+</html>
